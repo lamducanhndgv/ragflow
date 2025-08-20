@@ -47,9 +47,11 @@ from werkzeug.http import HTTP_STATUS_CODES
 
 from api import settings
 from api.constants import REQUEST_MAX_WAIT_SEC, REQUEST_WAIT_SEC
+from api.db import UserTenantRole
 from api.db.db_models import APIToken
 from api.db.services.llm_service import LLMService
 from api.db.services.tenant_llm_service import TenantLLMService
+from api.db.services.user_service import UserTenantService
 from api.utils import CustomJSONEncoder, get_uuid, json_dumps
 from rag.utils.mcp_tool_call_conn import MCPToolCallSession, close_multiple_mcp_toolcall_sessions
 
@@ -307,6 +309,26 @@ def token_required(func):
     return decorated_function
 
 
+def check_user_admin_role(tenant_id: str) -> bool:
+    """
+    Check if the user has ADMIN role for any tenant.
+
+    Args:
+        tenant_id (str): The user ID (same as tenant_id from token_required)
+
+    Returns:
+        bool: True if user has ADMIN role, False otherwise
+    """
+    try:
+        user_tenants = UserTenantService.query(user_id=tenant_id)
+        for user_tenant in user_tenants:
+            if user_tenant.role == UserTenantRole.ADMIN:
+                return True
+        return False
+    except Exception:
+        return False
+
+
 def get_result(code=settings.RetCode.SUCCESS, message="", data=None):
     if code == 0:
         if data is not None:
@@ -393,18 +415,7 @@ def get_parser_config(chunk_method, parser_config):
     return merged_config
 
 
-def get_data_openai(
-    id=None,
-    created=None,
-    model=None,
-    prompt_tokens=0,
-    completion_tokens=0,
-    content=None,
-    finish_reason=None,
-    object="chat.completion",
-    param=None,
-    stream=False
-):
+def get_data_openai(id=None, created=None, model=None, prompt_tokens=0, completion_tokens=0, content=None, finish_reason=None, object="chat.completion", param=None, stream=False):
     total_tokens = prompt_tokens + completion_tokens
 
     if stream:
@@ -412,11 +423,13 @@ def get_data_openai(
             "id": f"{id}",
             "object": "chat.completion.chunk",
             "model": model,
-            "choices": [{
-                "delta": {"content": content},
-                "finish_reason": finish_reason,
-                "index": 0,
-            }],
+            "choices": [
+                {
+                    "delta": {"content": content},
+                    "finish_reason": finish_reason,
+                    "index": 0,
+                }
+            ],
         }
 
     return {
@@ -435,15 +448,14 @@ def get_data_openai(
                 "rejected_prediction_tokens": 0,
             },
         },
-        "choices": [{
-            "message": {
-                "role": "assistant",
-                "content": content
-            },
-            "logprobs": None,
-            "finish_reason": finish_reason,
-            "index": 0,
-        }],
+        "choices": [
+            {
+                "message": {"role": "assistant", "content": content},
+                "logprobs": None,
+                "finish_reason": finish_reason,
+                "index": 0,
+            }
+        ],
     }
 
 
