@@ -21,13 +21,18 @@ from api.db.services.canvas_service import UserCanvasService
 from api.db.services.user_canvas_version import UserCanvasVersionService
 from api.settings import RetCode
 from api.utils import get_uuid
-from api.utils.api_utils import get_data_error_result, get_error_data_result, get_json_result, token_required
+from api.utils.api_utils import get_data_error_result, get_error_data_result, get_json_result, token_required, check_user_admin_role
 from api.utils.api_utils import get_result
 from flask import request
 
 @manager.route('/agents', methods=['GET'])  # noqa: F821
 @token_required
 def list_agents(tenant_id):
+    if not check_user_admin_role(tenant_id):
+        return get_json_result(
+            data=False, message="Access denied. Only users with ADMIN role can access agents.",
+            code=RetCode.OPERATING_ERROR)
+    
     id = request.args.get("id")
     title = request.args.get("title")
     if id or title:
@@ -48,6 +53,11 @@ def list_agents(tenant_id):
 @manager.route("/agents", methods=["POST"])  # noqa: F821
 @token_required
 def create_agent(tenant_id: str):
+    if not check_user_admin_role(tenant_id):
+        return get_json_result(
+            data=False, message="Access denied. Only users with ADMIN role can access agents.",
+            code=RetCode.OPERATING_ERROR)
+    
     req: dict[str, Any] = cast(dict[str, Any], request.json)
     req["user_id"] = tenant_id
 
@@ -85,6 +95,11 @@ def create_agent(tenant_id: str):
 @manager.route("/agents/<agent_id>", methods=["PUT"])  # noqa: F821
 @token_required
 def update_agent(tenant_id: str, agent_id: str):
+    if not check_user_admin_role(tenant_id):
+        return get_json_result(
+            data=False, message="Access denied. Only users with ADMIN role can access agents.",
+            code=RetCode.OPERATING_ERROR)
+    
     req: dict[str, Any] = {k: v for k, v in cast(dict[str, Any], request.json).items() if v is not None}
     req["user_id"] = tenant_id
 
@@ -119,6 +134,11 @@ def update_agent(tenant_id: str, agent_id: str):
 @manager.route("/agents/<agent_id>", methods=["DELETE"])  # noqa: F821
 @token_required
 def delete_agent(tenant_id: str, agent_id: str):
+    if not check_user_admin_role(tenant_id):
+        return get_json_result(
+            data=False, message="Access denied. Only users with ADMIN role can access agents.",
+            code=RetCode.OPERATING_ERROR)
+    
     if not UserCanvasService.query(user_id=tenant_id, id=agent_id):
         return get_json_result(
             data=False, message="Only owner of canvas authorized for this operation.",
