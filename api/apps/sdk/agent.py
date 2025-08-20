@@ -25,14 +25,13 @@ from api.utils.api_utils import get_data_error_result, get_error_data_result, ge
 from api.utils.api_utils import get_result
 from flask import request
 
-@manager.route('/agents', methods=['GET'])  # noqa: F821
+
+@manager.route("/agents", methods=["GET"])  # noqa: F821
 @token_required
 def list_agents(tenant_id):
     if not check_user_admin_role(tenant_id):
-        return get_json_result(
-            data=False, message="Access denied. Only users with ADMIN role can access agents.",
-            code=RetCode.OPERATING_ERROR)
-    
+        return get_json_result(data=False, message="Access denied. Only users with ADMIN role can access agents.", code=RetCode.OPERATING_ERROR)
+
     id = request.args.get("id")
     title = request.args.get("title")
     if id or title:
@@ -46,7 +45,7 @@ def list_agents(tenant_id):
         desc = False
     else:
         desc = True
-    canvas = UserCanvasService.get_list(tenant_id,page_number,items_per_page,orderby,desc,id,title)
+    canvas = UserCanvasService.get_list(tenant_id, page_number, items_per_page, orderby, desc, id, title)
     return get_result(data=canvas)
 
 
@@ -54,10 +53,8 @@ def list_agents(tenant_id):
 @token_required
 def create_agent(tenant_id: str):
     if not check_user_admin_role(tenant_id):
-        return get_json_result(
-            data=False, message="Access denied. Only users with ADMIN role can access agents.",
-            code=RetCode.OPERATING_ERROR)
-    
+        return get_json_result(data=False, message="Access denied. Only users with ADMIN role can access agents.", code=RetCode.OPERATING_ERROR)
+
     req: dict[str, Any] = cast(dict[str, Any], request.json)
     req["user_id"] = tenant_id
 
@@ -83,11 +80,7 @@ def create_agent(tenant_id: str):
     if not UserCanvasService.save(**req):
         return get_data_error_result(message="Fail to create agent.")
 
-    UserCanvasVersionService.insert(
-        user_canvas_id=agent_id,
-        title="{0}_{1}".format(req["title"], time.strftime("%Y_%m_%d_%H_%M_%S")),
-        dsl=req["dsl"]
-    )
+    UserCanvasVersionService.insert(user_canvas_id=agent_id, title="{0}_{1}".format(req["title"], time.strftime("%Y_%m_%d_%H_%M_%S")), dsl=req["dsl"])
 
     return get_json_result(data=True)
 
@@ -96,10 +89,8 @@ def create_agent(tenant_id: str):
 @token_required
 def update_agent(tenant_id: str, agent_id: str):
     if not check_user_admin_role(tenant_id):
-        return get_json_result(
-            data=False, message="Access denied. Only users with ADMIN role can access agents.",
-            code=RetCode.OPERATING_ERROR)
-    
+        return get_json_result(data=False, message="Access denied. Only users with ADMIN role can access agents.", code=RetCode.OPERATING_ERROR)
+
     req: dict[str, Any] = {k: v for k, v in cast(dict[str, Any], request.json).items() if v is not None}
     req["user_id"] = tenant_id
 
@@ -108,23 +99,17 @@ def update_agent(tenant_id: str, agent_id: str):
             req["dsl"] = json.dumps(req["dsl"], ensure_ascii=False)
 
         req["dsl"] = json.loads(req["dsl"])
-    
+
     if req.get("title") is not None:
         req["title"] = req["title"].strip()
 
     if not UserCanvasService.query(user_id=tenant_id, id=agent_id):
-        return get_json_result(
-            data=False, message="Only owner of canvas authorized for this operation.",
-            code=RetCode.OPERATING_ERROR)
+        return get_json_result(data=False, message="Only owner of canvas authorized for this operation.", code=RetCode.OPERATING_ERROR)
 
     UserCanvasService.update_by_id(agent_id, req)
 
     if req.get("dsl") is not None:
-        UserCanvasVersionService.insert(
-            user_canvas_id=agent_id,
-            title="{0}_{1}".format(req["title"], time.strftime("%Y_%m_%d_%H_%M_%S")),
-            dsl=req["dsl"]
-        )
+        UserCanvasVersionService.insert(user_canvas_id=agent_id, title="{0}_{1}".format(req["title"], time.strftime("%Y_%m_%d_%H_%M_%S")), dsl=req["dsl"])
 
         UserCanvasVersionService.delete_all_versions(agent_id)
 
@@ -135,14 +120,10 @@ def update_agent(tenant_id: str, agent_id: str):
 @token_required
 def delete_agent(tenant_id: str, agent_id: str):
     if not check_user_admin_role(tenant_id):
-        return get_json_result(
-            data=False, message="Access denied. Only users with ADMIN role can access agents.",
-            code=RetCode.OPERATING_ERROR)
-    
+        return get_json_result(data=False, message="Access denied. Only users with ADMIN role can access agents.", code=RetCode.OPERATING_ERROR)
+
     if not UserCanvasService.query(user_id=tenant_id, id=agent_id):
-        return get_json_result(
-            data=False, message="Only owner of canvas authorized for this operation.",
-            code=RetCode.OPERATING_ERROR)
+        return get_json_result(data=False, message="Only owner of canvas authorized for this operation.", code=RetCode.OPERATING_ERROR)
 
     UserCanvasService.delete_by_id(agent_id)
     return get_json_result(data=True)

@@ -312,10 +312,10 @@ def token_required(func):
 def check_user_admin_role(tenant_id: str) -> bool:
     """
     Check if the user has ADMIN role for any tenant.
-    
+
     Args:
         tenant_id (str): The user ID (same as tenant_id from token_required)
-        
+
     Returns:
         bool: True if user has ADMIN role, False otherwise
     """
@@ -415,18 +415,7 @@ def get_parser_config(chunk_method, parser_config):
     return merged_config
 
 
-def get_data_openai(
-    id=None,
-    created=None,
-    model=None,
-    prompt_tokens=0,
-    completion_tokens=0,
-    content=None,
-    finish_reason=None,
-    object="chat.completion",
-    param=None,
-    stream=False
-):
+def get_data_openai(id=None, created=None, model=None, prompt_tokens=0, completion_tokens=0, content=None, finish_reason=None, object="chat.completion", param=None, stream=False):
     total_tokens = prompt_tokens + completion_tokens
 
     if stream:
@@ -434,11 +423,13 @@ def get_data_openai(
             "id": f"{id}",
             "object": "chat.completion.chunk",
             "model": model,
-            "choices": [{
-                "delta": {"content": content},
-                "finish_reason": finish_reason,
-                "index": 0,
-            }],
+            "choices": [
+                {
+                    "delta": {"content": content},
+                    "finish_reason": finish_reason,
+                    "index": 0,
+                }
+            ],
         }
 
     return {
@@ -457,15 +448,14 @@ def get_data_openai(
                 "rejected_prediction_tokens": 0,
             },
         },
-        "choices": [{
-            "message": {
-                "role": "assistant",
-                "content": content
-            },
-            "logprobs": None,
-            "finish_reason": finish_reason,
-            "index": 0,
-        }],
+        "choices": [
+            {
+                "message": {"role": "assistant", "content": content},
+                "logprobs": None,
+                "finish_reason": finish_reason,
+                "index": 0,
+            }
+        ],
     }
 
 
