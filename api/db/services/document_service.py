@@ -455,7 +455,7 @@ class DocumentService(CommonService):
         ).where(
             cls.model.id == doc_id,
             UserTenant.status == StatusEnum.VALID.value,
-            ((UserTenant.role == UserTenantRole.NORMAL) | (UserTenant.role == UserTenantRole.OWNER))
+            ((UserTenant.role == UserTenantRole.NORMAL) | (UserTenant.role == UserTenantRole.OWNER) | (UserTenant.role == UserTenantRole.ADMIN))
         ).paginate(0, 1)
         docs = docs.dicts()
         if not docs:

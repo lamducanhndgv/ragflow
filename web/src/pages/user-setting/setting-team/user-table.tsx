@@ -13,6 +13,7 @@ const ColorMap = {
   [TenantRole.Normal]: 'green',
   [TenantRole.Invite]: 'orange',
   [TenantRole.Owner]: 'red',
+  [TenantRole.Admin]: 'blue',
 };
 
 const UserTable = () => {
