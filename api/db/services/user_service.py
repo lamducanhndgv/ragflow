@@ -160,7 +160,7 @@ class TenantService(CommonService):
             cls.model.parser_ids,
             UserTenant.role]
         return list(cls.model.select(*fields)
-                    .join(UserTenant, on=((cls.model.id == UserTenant.tenant_id) & (UserTenant.user_id == user_id) & (UserTenant.status == StatusEnum.VALID.value) & (UserTenant.role == UserTenantRole.OWNER)))
+                    .join(UserTenant, on=((cls.model.id == UserTenant.tenant_id) & (UserTenant.user_id == user_id) & (UserTenant.status == StatusEnum.VALID.value) & ((UserTenant.role == UserTenantRole.OWNER) | (UserTenant.role == UserTenantRole.ADMIN))))
                     .where(cls.model.status == StatusEnum.VALID.value).dicts())
 
     @classmethod

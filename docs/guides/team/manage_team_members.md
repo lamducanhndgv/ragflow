@@ -9,14 +9,23 @@ Invite or remove team members.
 
 ---
 
-By default, each RAGFlow user is assigned a single team named after their name. RAGFlow allows you to invite RAGFlow users to your team. Your team members can help you:
+By default, each RAGFlow user is assigned a single team named after their name. RAGFlow allows you to invite RAGFlow users to your team with different roles. Your team members can help you:
 
 - Upload documents to your shared datasets (knowledge bases).
 - Parse documents in your shared datasets.
 - Use your shared Agents.
 
+## Team Roles
+
+RAGFlow supports the following team roles:
+
+- **Owner**: Full control over the team, including inviting/removing members, managing roles, and deleting the team.
+- **Admin**: Can invite and remove team members, access all team resources, but cannot delete the team or change member roles.
+- **Normal**: Basic team member with access to shared resources based on permissions.
+
 :::tip NOTE
-- Your team members are currently *not* allowed to invite users to your team, and only you, the team owner, is permitted to do so.
+- Team admins can invite users to your team and manage team members.
+- Only the team owner can promote members to admin or change member roles.
 - Sharing added models with team members is only available in RAGFlow's Enterprise edition.
 :::
 
@@ -40,3 +49,18 @@ You are, by default, the owner of your own team and the only person permitted to
 ## Remove team members
 
 ![remove_members](https://github.com/user-attachments/assets/5c1a6ab5-8862-47a0-ad09-77fe88866508)
+
+## Manage team member roles
+
+As the team owner, you can promote team members to admin or change their roles:
+
+1. On the **Team** page, locate the team member whose role you want to change.
+2. Use the role management interface to select the desired role:
+   - **Admin**: Grants the member ability to invite/remove users and access all team resources
+   - **Normal**: Standard team member with basic access to shared resources
+
+:::tip NOTE
+- Only team owners can change member roles
+- Admin members cannot change roles of other members
+- The owner role cannot be transferred or changed
+:::

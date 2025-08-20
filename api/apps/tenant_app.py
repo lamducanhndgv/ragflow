@@ -31,7 +31,9 @@ from api.utils.web_utils import send_invite_email
 @manager.route("/<tenant_id>/user/list", methods=["GET"])  # noqa: F821
 @login_required
 def user_list(tenant_id):
-    if current_user.id != tenant_id:
+    # Check if user is owner or admin of the tenant
+    user_tenant = UserTenantService.query(user_id=current_user.id, tenant_id=tenant_id)
+    if not user_tenant or user_tenant[0].role not in [UserTenantRole.OWNER, UserTenantRole.ADMIN]:
         return get_json_result(
             data=False,
             message='No authorization.',
@@ -50,7 +52,9 @@ def user_list(tenant_id):
 @login_required
 @validate_request("email")
 def create(tenant_id):
-    if current_user.id != tenant_id:
+    # Check if user is owner or admin of the tenant
+    user_tenant = UserTenantService.query(user_id=current_user.id, tenant_id=tenant_id)
+    if not user_tenant or user_tenant[0].role not in [UserTenantRole.OWNER, UserTenantRole.ADMIN]:
         return get_json_result(
             data=False,
             message='No authorization.',
@@ -70,6 +74,8 @@ def create(tenant_id):
             return get_data_error_result(message=f"{invite_user_email} is already in the team.")
         if user_tenant_role == UserTenantRole.OWNER:
             return get_data_error_result(message=f"{invite_user_email} is the owner of the team.")
+        if user_tenant_role == UserTenantRole.ADMIN:
+            return get_data_error_result(message=f"{invite_user_email} is already an admin of the team.")
         return get_data_error_result(message=f"{invite_user_email} is in the team, but the role: {user_tenant_role} is invalid.")
 
     UserTenantService.save(
@@ -103,7 +109,9 @@ def create(tenant_id):
 @manager.route('/<tenant_id>/user/<user_id>', methods=['DELETE'])  # noqa: F821
 @login_required
 def rm(tenant_id, user_id):
-    if current_user.id != tenant_id and current_user.id != user_id:
+    # Check if current user is owner or admin of the tenant, or is removing themselves
+    user_tenant = UserTenantService.query(user_id=current_user.id, tenant_id=tenant_id)
+    if not user_tenant or (user_tenant[0].role not in [UserTenantRole.OWNER, UserTenantRole.ADMIN] and current_user.id != user_id):
         return get_json_result(
             data=False,
             message='No authorization.',
@@ -133,6 +141,49 @@ def tenant_list():
 def agree(tenant_id):
     try:
         UserTenantService.filter_update([UserTenant.tenant_id == tenant_id, UserTenant.user_id == current_user.id], {"role": UserTenantRole.NORMAL})
+        return get_json_result(data=True)
+    except Exception as e:
+        return server_error_response(e)
+
+
+@manager.route('/<tenant_id>/user/<user_id>/role', methods=['PUT'])  # noqa: F821
+@login_required
+@validate_request("role")
+def update_user_role(tenant_id, user_id):
+    """Update user role in tenant - only tenant owner can do this"""
+    # Only tenant owner can change user roles
+    owner_tenant = UserTenantService.query(user_id=current_user.id, tenant_id=tenant_id)
+    if not owner_tenant or owner_tenant[0].role != UserTenantRole.OWNER:
+        return get_json_result(
+            data=False,
+            message='Only tenant owner can change user roles.',
+            code=settings.RetCode.AUTHENTICATION_ERROR)
+    
+    req = request.json
+    new_role = req["role"]
+    
+    # Validate the new role
+    if new_role not in [UserTenantRole.ADMIN, UserTenantRole.NORMAL]:
+        return get_data_error_result(message="Invalid role. Only 'admin' and 'normal' roles can be assigned.")
+    
+    # Cannot change own role
+    if current_user.id == user_id:
+        return get_data_error_result(message="Cannot change your own role.")
+    
+    # Check if target user exists in the tenant
+    target_user_tenant = UserTenantService.query(user_id=user_id, tenant_id=tenant_id)
+    if not target_user_tenant:
+        return get_data_error_result(message="User not found in this tenant.")
+    
+    # Cannot change owner role
+    if target_user_tenant[0].role == UserTenantRole.OWNER:
+        return get_data_error_result(message="Cannot change the role of the tenant owner.")
+    
+    try:
+        UserTenantService.filter_update(
+            [UserTenant.tenant_id == tenant_id, UserTenant.user_id == user_id], 
+            {"role": new_role}
+        )
         return get_json_result(data=True)
     except Exception as e:
         return server_error_response(e)
